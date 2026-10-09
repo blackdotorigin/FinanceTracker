@@ -2,7 +2,13 @@ package com.BlackDot.Finance.Tracker.Auth;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.core.annotation.Order;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,23 +17,76 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.web.SecurityFilterChain;
+import java.util.List;
+import com.BlackDot.Finance.Tracker.AppProps;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final AppProps props;
+
+    @Value("${app.security.permit-all-api:false}")
+    private boolean permitAllApi;
+
     @Bean
-    SecurityFilterChain chain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(a -> a
-                .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()  // registration
-                .requestMatchers("/actuator/health").permitAll()
-                .anyRequest().authenticated())
-            .httpBasic(Customizer.withDefaults());   // temporary; swap for JWT filter later
+    @Order(1)
+    SecurityFilterChain oauthChain(
+            HttpSecurity http,
+            GithubAwareUserService githubUserService,
+            OAuthSuccessHandler successHandler,
+            OAuthFailureHandler failureHandler) throws Exception {
+        http.securityMatcher("/oauth2/**", "/login/oauth2/**")
+            .authorizeHttpRequests(a -> a.anyRequest().permitAll())
+            .oauth2Login(o -> o
+                .userInfoEndpoint(u -> u
+                    .userService(githubUserService)
+                    .oidcUserService(new OidcUserService()))
+                .successHandler(successHandler)
+                .failureHandler(failureHandler));
         return http.build();
+    }
+
+    @Bean
+    @Order(2)
+    SecurityFilterChain apiChain(HttpSecurity http, JwtAuthConverter jwtAuthConverter) throws Exception {
+        http.cors(Customizer.withDefaults())
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(a -> {
+                if (permitAllApi) {
+                    a.anyRequest().permitAll();
+                } else {
+                    a.requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .anyRequest().authenticated();
+                }
+            });
+        if (!permitAllApi) {
+            http.oauth2ResourceServer(o ->
+                    o.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter)));
+        }
+        return http.build();
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(props.frontendUrl()));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of(HttpHeaders.AUTHORIZATION, HttpHeaders.CONTENT_TYPE));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean 

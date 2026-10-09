@@ -2,9 +2,9 @@ package com.BlackDot.Finance.Tracker.Auth;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.BlackDot.Finance.Tracker.CustomException.ResourceNotFoundException;
 import com.BlackDot.Finance.Tracker.Users.UserRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -16,7 +16,7 @@ public class AppUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) {
         return repo.findByUsernameAndActiveTrue(username.trim().toLowerCase())
-                .map(AuthUser::new)
-                .orElseThrow(() -> new ResourceNotFoundException("Invalid credentials"));
+                .map(AuthUser::fromUser)
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
     }
 }

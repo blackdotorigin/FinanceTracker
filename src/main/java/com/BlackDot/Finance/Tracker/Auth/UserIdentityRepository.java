@@ -1,0 +1,9 @@
+package com.BlackDot.Finance.Tracker.Auth;
+
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserIdentityRepository extends JpaRepository<UserIdentity, UUID> {
+    Optional<UserIdentity> findByProviderAndProviderUserId(String provider, String providerUserId);
+}
