@@ -32,7 +32,7 @@ public class TransactionService {
 
     @Transactional
     public TransactionResponse create(CreateTransactionRequest r) {
-        categoryService.validateSelection(r.categoryId(), r.subCategoryId());
+        categoryService.validateSelection(r.type(), r.categoryId(), r.subCategoryId());
         Transaction t = new Transaction();
         t.setUserId(CurrentUser.id());
         apply(t, r.amount(), r.currency(), r.type(), r.transactionDate(),
@@ -73,7 +73,8 @@ public class TransactionService {
     public TransactionResponse update(UUID id, UpdateTransactionRequest updateTransactionRequest) {
         Transaction transaction = findOwned(id);
         categoryService.validateSelection(
-                updateTransactionRequest.categoryId(), updateTransactionRequest.subCategoryId());
+                updateTransactionRequest.type(), updateTransactionRequest.categoryId(),
+                updateTransactionRequest.subCategoryId());
         apply(transaction, updateTransactionRequest.amount(), updateTransactionRequest.currency(),
                 updateTransactionRequest.type(), updateTransactionRequest.transactionDate(),
                 updateTransactionRequest.description(), updateTransactionRequest.categoryId(),

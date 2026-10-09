@@ -24,7 +24,7 @@ public class OAuthFailureHandler implements AuthenticationFailureHandler {
         String code = exception instanceof OAuth2AuthenticationException oauthException
                 ? oauthException.getError().getErrorCode()
                 : "login_failed";
-        response.sendRedirect(props.frontendUrl() + "/login"
+        response.sendRedirect(props.frontendUrl() + "/login?error="
                 + URLEncoder.encode(code, StandardCharsets.UTF_8));
     }
 }

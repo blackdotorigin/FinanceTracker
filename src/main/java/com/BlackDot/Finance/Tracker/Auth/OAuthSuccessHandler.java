@@ -1,6 +1,8 @@
 package com.BlackDot.Finance.Tracker.Auth;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import com.BlackDot.Finance.Tracker.AppProps;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,10 +38,10 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
             if (session != null) {
                 session.invalidate();
             }
-            response.sendRedirect( "http://localhost:8080/" + "api/v1/users/me");
+            response.sendRedirect(props.frontendUrl() + "/auth/callback");
         } catch (OAuth2AuthenticationException exception) {
             response.sendRedirect(props.frontendUrl() + "/login?error="
-                    + exception.getError().getErrorCode());
+                    + URLEncoder.encode(exception.getError().getErrorCode(), StandardCharsets.UTF_8));
         }
     }
 }

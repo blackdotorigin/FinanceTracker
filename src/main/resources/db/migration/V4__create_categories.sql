@@ -2,6 +2,7 @@ CREATE TABLE categories (
     id         UUID PRIMARY KEY,
     name       VARCHAR(80) NOT NULL,
     system_key VARCHAR(50) NOT NULL UNIQUE,
+    type       VARCHAR(10) NOT NULL CHECK (type IN ('INCOME', 'EXPENSE')),
     icon       VARCHAR(50),
     color      VARCHAR(20),
     sort_order INT         NOT NULL DEFAULT 0,

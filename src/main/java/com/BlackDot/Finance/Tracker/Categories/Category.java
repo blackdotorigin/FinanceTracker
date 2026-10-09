@@ -5,8 +5,11 @@ import java.util.Set;
 import java.util.UUID;
 import com.BlackDot.Finance.Tracker.SubCategories.SubCategory;
 import com.BlackDot.Finance.Tracker.SuperClasses.BaseEntity;
+import com.BlackDot.Finance.Tracker.Transactions.TransactionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -31,6 +34,10 @@ public class Category extends BaseEntity {
 
     @Column(name = "system_key", nullable = false, updatable = false)
     private String systemKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private TransactionType type;
 
     private String icon;
     private String color;

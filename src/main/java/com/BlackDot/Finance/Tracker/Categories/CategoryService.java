@@ -14,6 +14,7 @@ import com.BlackDot.Finance.Tracker.CustomException.BadRequestException;
 import com.BlackDot.Finance.Tracker.SubCategories.SubCategory;
 import com.BlackDot.Finance.Tracker.SubCategories.SubCategoryRepository;
 import com.BlackDot.Finance.Tracker.SubCategories.SubCategoryResponse;
+import com.BlackDot.Finance.Tracker.Transactions.TransactionType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,10 +30,10 @@ public class CategoryService {
     /** The dropdown data: every category with the sub-categories allowed under it. */
     @Cacheable("categoryTree")
     @Transactional(readOnly = true)
-    public List<CategoryResponse> tree() {
-        return categories.findAllActiveWithSubCategories().stream()
+    public List<CategoryResponse> tree(TransactionType type) {
+        return categories.findAllActiveWithSubCategories(type).stream()
                 .sorted(Comparator.comparingInt(Category::getSortOrder).thenComparing(Category::getName))
-                .map(c -> new CategoryResponse(c.getId(), c.getName(), c.getIcon(), c.getColor(),
+                .map(c -> new CategoryResponse(c.getId(), c.getName(), c.getType(), c.getIcon(), c.getColor(),
                         c.getSubCategories().stream()
                                 .filter(SubCategory::isActive)
                                 .sorted(Comparator.comparingInt(SubCategory::getSortOrder)
@@ -44,11 +45,11 @@ public class CategoryService {
 
     /** Category is required, sub-category optional but must belong to that category. */
     @Transactional(readOnly = true)
-    public void validateSelection(UUID categoryId, UUID subCategoryId) {
+    public void validateSelection(TransactionType type, UUID categoryId, UUID subCategoryId) {
         if (subCategoryId == null) {
-            if (!categories.existsByIdAndActiveTrue(categoryId))
-                throw new BadRequestException("Invalid category");
-        } else if (!categories.existsActivePair(categoryId, subCategoryId)) {
+            if (!categories.existsByIdAndActiveTrueAndType(categoryId, type))
+                throw new BadRequestException("Invalid category for transaction type");
+        } else if (!categories.existsActivePair(categoryId, subCategoryId, type)) {
             throw new BadRequestException("Invalid category / sub-category combination");
         }
     }

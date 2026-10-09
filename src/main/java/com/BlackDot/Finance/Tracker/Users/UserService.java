@@ -8,6 +8,7 @@ import com.BlackDot.Finance.Tracker.Auth.AuthorizationService;
 import com.BlackDot.Finance.Tracker.Auth.CurrentUser;
 import com.BlackDot.Finance.Tracker.Auth.SelfOrAdmin;
 import com.BlackDot.Finance.Tracker.CustomException.BadRequestException;
+import com.BlackDot.Finance.Tracker.CustomException.ConstraintViolationException;
 import com.BlackDot.Finance.Tracker.CustomException.ResourceNotFoundException;
 import com.BlackDot.Finance.Tracker.Roles.Roles;
 import com.BlackDot.Finance.Tracker.Users.DTO.CreateUserRequest;
@@ -30,9 +31,9 @@ public class UserService {
         String email = createUserRequest.email().trim().toLowerCase();
         String username = createUserRequest.username().trim().toLowerCase();
         if (repo.existsByEmailIgnoreCase(email))
-            throw new RuntimeException("Email already registered");
+            throw new ConstraintViolationException("Email already registered");
         if (repo.existsByUsernameIgnoreCase(username))
-            throw new RuntimeException("Username already registered");
+            throw new ConstraintViolationException("Username already registered");
 
         User user = new User();
         user.setEmail(email);
