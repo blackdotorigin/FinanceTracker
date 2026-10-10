@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.BlackDot.Finance.Tracker.Categories.CategoryService;
 import com.BlackDot.Finance.Tracker.Transactions.TransactionController;
 import com.BlackDot.Finance.Tracker.Transactions.TransactionRepository;
-import com.BlackDot.Finance.Tracker.Transactions.Transaction;
 import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.TransactionResponse;
 import com.BlackDot.Finance.Tracker.Users.UserService;
 import com.BlackDot.Finance.Tracker.Users.DTO.UserResponse;

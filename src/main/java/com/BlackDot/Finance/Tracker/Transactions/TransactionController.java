@@ -2,6 +2,7 @@ package com.BlackDot.Finance.Tracker.Transactions;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -54,6 +55,11 @@ public class TransactionController {
         @RequestParam(defaultValue = "ASC") String direction) {
 
         return new PagedModel<>(service.list(from, to, buildPageable(page, size, sortBy, direction)));
+    }
+
+    @GetMapping("/graph")
+    public List<TransactionResponse> graph(@RequestParam String period) {
+        return service.graph(period);
     }
 
     

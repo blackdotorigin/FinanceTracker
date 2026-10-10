@@ -1,14 +1,20 @@
 package com.BlackDot.Finance.Tracker.Transactions;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.BlackDot.Finance.Tracker.Auth.AuthorizationService;
@@ -19,6 +25,7 @@ import com.BlackDot.Finance.Tracker.CustomException.ResourceNotFoundException;
 import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.CreateTransactionRequest;
 import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.TransactionResponse;
 import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.UpdateTransactionRequest;
+import com.BlackDot.Finance.Tracker.UserActivity.UserActivityService;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -28,7 +35,9 @@ public class TransactionService {
     private final TransactionRepository repo;
     private final AuthorizationService auth;
     private final CategoryService categoryService;
+    private final UserActivityService userActivityService;
     private static final long MAX_RANGE_DAYS = 366;
+    private static final int GRAPH_LIMIT = 10;
 
     @Transactional
     public TransactionResponse create(CreateTransactionRequest r) {
@@ -37,7 +46,9 @@ public class TransactionService {
         t.setUserId(CurrentUser.id());
         apply(t, r.amount(), r.currency(), r.type(), r.transactionDate(),
             r.description(), r.categoryId(), r.subCategoryId());
-        return toResponse(repo.save(t));
+        Transaction saved = repo.save(t);
+        userActivityService.recordTransaction(t.getUserId(), t.getTransactionDate());
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -69,9 +80,50 @@ public class TransactionService {
         return transactions.map(transaction -> TransactionResponse.from(transaction, refData));
     }
 
+    @Transactional(readOnly = true)
+    public List<TransactionResponse> graph(String period) {
+        LocalDate today = LocalDate.now();
+        LocalDate start;
+        LocalDate end;
+
+        switch (period == null ? "" : period.trim().toLowerCase(Locale.ROOT)) {
+            case "week" -> {
+                start = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                end = start.plusDays(6);
+            }
+            case "month" -> {
+                YearMonth month = YearMonth.from(today);
+                start = month.atDay(1);
+                end = month.atEndOfMonth();
+            }
+            case "year" -> {
+                start = today.with(TemporalAdjusters.firstDayOfYear());
+                end = today.with(TemporalAdjusters.lastDayOfYear());
+            }
+            default -> throw new BadRequestException("period must be week, month, or year");
+        }
+
+        Page<Transaction> transactions = repo.findByUserIdAndTransactionDateBetween(
+                CurrentUser.id(), start, end,
+                PageRequest.of(0, GRAPH_LIMIT, Sort.by(
+                        Sort.Order.desc("transactionDate"), Sort.Order.desc("id"))));
+        Set<UUID> categoryIds = new HashSet<>();
+        Set<UUID> subCategoryIds = new HashSet<>();
+        transactions.forEach(transaction -> {
+            categoryIds.add(transaction.getCategoryId());
+            if (transaction.getSubCategoryId() != null) {
+                subCategoryIds.add(transaction.getSubCategoryId());
+            }
+        });
+        CategoryService.RefData refData = categoryService.lookup(categoryIds, subCategoryIds);
+        return transactions.map(transaction -> TransactionResponse.from(transaction, refData))
+                .getContent();
+    }
+
     @Transactional
     public TransactionResponse update(UUID id, UpdateTransactionRequest updateTransactionRequest) {
         Transaction transaction = findOwned(id);
+        LocalDate previousDate = transaction.getTransactionDate();
         categoryService.validateSelection(
                 updateTransactionRequest.type(), updateTransactionRequest.categoryId(),
                 updateTransactionRequest.subCategoryId());
@@ -79,12 +131,20 @@ public class TransactionService {
                 updateTransactionRequest.type(), updateTransactionRequest.transactionDate(),
                 updateTransactionRequest.description(), updateTransactionRequest.categoryId(),
                 updateTransactionRequest.subCategoryId());
+        if (!previousDate.equals(transaction.getTransactionDate())) {
+            userActivityService.removeTransaction(transaction.getUserId(), previousDate);
+            userActivityService.recordTransaction(
+                    transaction.getUserId(), transaction.getTransactionDate());
+        }
         return toResponse(transaction);
     }
 
     @Transactional
     public void delete(UUID id) {
-        repo.delete(findOwned(id));
+        Transaction transaction = findOwned(id);
+        repo.delete(transaction);
+        userActivityService.removeTransaction(
+                transaction.getUserId(), transaction.getTransactionDate());
     }
 
     private Transaction findOwned(UUID id) {

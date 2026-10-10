@@ -2,6 +2,7 @@ package com.BlackDot.Finance.Tracker.Auth;
 
 import com.BlackDot.Finance.Tracker.Users.User;
 import com.BlackDot.Finance.Tracker.Users.UserRepository;
+import com.BlackDot.Finance.Tracker.UserActivity.UserActivityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +25,7 @@ public class AuthController {
     private final TokenService tokens;
     private final CookieFactory cookies;
     private final UserRepository users;
+    private final UserActivityService userActivity;
 
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
@@ -33,7 +35,9 @@ public class AuthController {
         AuthUser principal = (AuthUser) auth.getPrincipal();
         User user = users.findByIdAndActiveTrue(principal.getId())
                 .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
-        return respond(tokens.issue(user));
+        AuthTokens authTokens = tokens.issue(user);
+        userActivity.recordLogin(user.getId());
+        return respond(authTokens);
     }
 
     @PostMapping("/refresh")

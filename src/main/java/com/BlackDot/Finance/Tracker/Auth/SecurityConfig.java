@@ -2,7 +2,6 @@ package com.BlackDot.Finance.Tracker.Auth;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -20,16 +19,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.web.SecurityFilterChain;
 import java.util.List;
-import com.BlackDot.Finance.Tracker.AppProps;
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
-
-    private final AppProps props;
 
     @Value("${app.security.permit-all-api:false}")
     private boolean permitAllApi;
@@ -42,6 +36,7 @@ public class SecurityConfig {
             OAuthSuccessHandler successHandler,
             OAuthFailureHandler failureHandler) throws Exception {
         http.securityMatcher("/oauth2/**", "/login/oauth2/**")
+            .cors(Customizer.withDefaults())
             .authorizeHttpRequests(a -> a.anyRequest().permitAll())
             .oauth2Login(o -> o
                 .userInfoEndpoint(u -> u
@@ -79,9 +74,9 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(props.frontendUrl()));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of(HttpHeaders.AUTHORIZATION, HttpHeaders.CONTENT_TYPE));
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("*"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import com.BlackDot.Finance.Tracker.AppProps;
+import com.BlackDot.Finance.Tracker.Users.User;
+import com.BlackDot.Finance.Tracker.UserActivity.UserActivityService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,6 +25,7 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
     private final TokenService tokens;
     private final CookieFactory cookies;
     private final AppProps props;
+    private final UserActivityService userActivity;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -31,7 +34,9 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
         try {
             OAuthProfile profile = OAuthProfile.from(
                     token.getAuthorizedClientRegistrationId(), token.getPrincipal());
-            AuthTokens issued = tokens.issue(oauthUsers.findOrCreate(profile));
+            User user = oauthUsers.findOrCreate(profile);
+            AuthTokens issued = tokens.issue(user);
+            userActivity.recordLogin(user.getId());
             response.addHeader(HttpHeaders.SET_COOKIE, cookies.refresh(issued.refreshToken()).toString());
 
             HttpSession session = request.getSession(false);
