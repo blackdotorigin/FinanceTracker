@@ -18,4 +18,4 @@ COPY --from=build --chown=app:app /workspace/target/Tracker-*.jar /app/app.jar
 USER app
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-Xms64m", "-Xmx192m", "-XX:MaxMetaspaceSize=96m", "-XX:ReservedCodeCacheSize=32m", "-XX:MaxDirectMemorySize=16m", "-Xss512k", "-XX:ActiveProcessorCount=2", "-XX:+UseSerialGC", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-Xms64m", "-Xmx160m", "-XX:MaxMetaspaceSize=192m", "-XX:ReservedCodeCacheSize=24m", "-XX:MaxDirectMemorySize=16m", "-Xss384k", "-XX:ActiveProcessorCount=2", "-XX:+UseSerialGC", "-jar", "/app/app.jar"]

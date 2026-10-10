@@ -15,6 +15,19 @@ For local development against Neon, activate the `dev` profile with
 the database password through `DB_PASSWORD` in the environment rather than
 committing it to a properties file.
 
+To load local development values from an ignored `.env` file, run:
+
+```sh
+set -a
+source .env
+set +a
+SPRING_PROFILES_ACTIVE=dev bash ./mvnw spring-boot:run
+```
+
+Use a JDBC URL (`jdbc:postgresql://host/database?...`) in `DB_URL`; keep the
+database username and password in their own variables. `.env` is ignored by
+Git and must never be committed.
+
 Set `JWT_SECRET` to a random value of at least 32 bytes. OAuth sign-in requires
 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, and
 `GITHUB_CLIENT_SECRET`. The frontend origin can be configured with
@@ -48,7 +61,7 @@ them to GitHub:
 - `FRONTEND_URL` and `COOKIE_SECURE=true` for the deployed frontend
 
 Select a Render instance with no more than 512 MiB of memory. The Docker image
-limits the JVM heap to 192 MiB and bounds metaspace, code cache, direct memory,
+limits the JVM heap to 160 MiB and metaspace to 192 MiB, and bounds code cache, direct memory,
 and thread-stack size. Tomcat is configured for at most 20 request threads;
 the JVM sees two processors to keep its internal pools small. The Render
 instance setting enforces the container memory limit.
@@ -71,8 +84,8 @@ docker run --rm --name financetracker --memory=512m --cpus=2 -p 8080:8080 \
   financetracker
 ```
 
-The JVM is configured with a 192 MiB maximum heap and bounded metaspace,
-code cache, and direct memory to leave room for native memory under the
+The JVM is configured with a 160 MiB maximum heap and 192 MiB maximum metaspace,
+plus bounded code cache and direct memory to leave room for native memory under the
 container limit. Export database and auth settings in the shell before running
 the command; do not add secret values to the command or the repository.
 `localhost` inside the container refers to the container itself.

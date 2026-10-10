@@ -139,7 +139,8 @@ Render deploy-hook URL.
 
 ## Resource limits
 
-The image configures Java with a 192 MiB maximum heap, bounded native memory,
-two visible processors, and a 20-thread Tomcat request pool. Select a Render
+The image configures Java with a 160 MiB maximum heap, 192 MiB maximum metaspace,
+bounded native memory, two visible processors, and a 20-thread Tomcat request
+pool. Select a Render
 instance with no more than 512 MiB RAM to enforce the container memory limit;
 the Docker image cannot set the hosting provider's memory plan.
