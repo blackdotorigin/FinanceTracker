@@ -25,10 +25,10 @@ Set `JWT_SECRET` to a random value of at least 32 bytes. OAuth sign-in requires
 For the full account setup and deployment walkthrough, see
 [DEPLOYMENT.md](./DEPLOYMENT.md).
 
-The GitHub Actions workflow at `.github/workflows/publish-image.yml` runs
-`./mvnw clean verify`, builds the Docker image, and publishes it to GitHub
-Container Registry (GHCR) on pushes to `main`. In Render, create a Web Service
-using the published Docker image
+The GitHub Actions workflow at `.github/workflows/publish-image.yml` compiles
+and packages the app with Maven (test execution is skipped), builds the Docker
+image, and publishes it to GitHub Container Registry (GHCR) on pushes to
+`main`. In Render, create a Web Service using the published Docker image
 `ghcr.io/blackdotorigin/financetracker:latest`. Make the GHCR package public or
 configure Render with credentials that can read the private package.
 

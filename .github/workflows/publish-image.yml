@@ -29,8 +29,8 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Run clean Maven build and tests
-        run: bash ./mvnw -B -ntp clean verify
+      - name: Run clean Maven build (skip tests)
+        run: bash ./mvnw -B -ntp clean verify -DskipTests
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

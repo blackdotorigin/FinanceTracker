@@ -34,6 +34,11 @@ publish Docker image** and wait for the run to finish successfully. The workflow
 uses GitHub's automatically provided `GITHUB_TOKEN` to publish the image; you
 do not need a Docker Hub account or a separate registry password.
 
+The workflow compiles and packages the app but skips test execution, so it
+does not need a database connection. The deployed app connects to Neon using
+the environment variables configured in Render. The frontend does not need to
+be deployed to build or publish the backend image.
+
 The published image names are:
 
 ```text
