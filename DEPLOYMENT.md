@@ -100,7 +100,7 @@ or GitHub Actions:
 | `GITHUB_CLIENT_ID` | GitHub OAuth client ID, if GitHub sign-in is used |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret, if GitHub sign-in is used |
 | `FRONTEND_URL` | The deployed frontend's exact origin, such as `https://app.example.com` |
-| `COOKIE_SECURE` | `true` when using HTTPS |
+| `COOKIE_SECURE` | `true` when using HTTPS (sets `SameSite=None` for cross-site cookies) |
 | `PORT` | `8080` |
 
 In Neon, copy the host and database name from its connection details. Use the
@@ -119,6 +119,12 @@ https://<your-render-service>.onrender.com/login/oauth2/code/github
 Save the environment changes and redeploy the service. Flyway applies the
 application's database migrations when the backend starts. Check the Render
 service logs for startup errors.
+
+The frontend must send login, refresh, and logout requests with credentials
+enabled (`credentials: "include"` for `fetch`, or `withCredentials: true` for
+Axios). Otherwise the browser will not store or send the HttpOnly refresh
+cookie. After the first deployment of the cookie configuration, log in again
+to receive a cookie with the updated attributes.
 
 ## 6. Automatically deploy new images (optional)
 

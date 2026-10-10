@@ -23,7 +23,7 @@ public class CookieFactory {
         return ResponseCookie.from(REFRESH, value)
                 .httpOnly(true)
                 .secure(props.cookieSecure())
-                .sameSite("Lax")
+                .sameSite(props.cookieSecure() ? "None" : "Lax")
                 .path("/api/v1/auth");
     }
 }

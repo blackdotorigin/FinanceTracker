@@ -30,8 +30,10 @@ Git and must never be committed.
 
 Set `JWT_SECRET` to a random value of at least 32 bytes. OAuth sign-in requires
 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, and
-`GITHUB_CLIENT_SECRET`. The frontend origin can be configured with
-`FRONTEND_URL`; set `COOKIE_SECURE=true` when serving over HTTPS.
+`GITHUB_CLIENT_SECRET`. The frontend origin can be configured with `FRONTEND_URL`. Set
+`COOKIE_SECURE=true` when serving over HTTPS; this also sets the refresh cookie
+to `SameSite=None` for cross-site production frontend/API deployments. Keep it
+false for local HTTP development, which uses `SameSite=Lax`.
 
 ### GitHub Actions and Render deployment
 
@@ -59,6 +61,10 @@ them to GitHub:
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 - `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
 - `FRONTEND_URL` and `COOKIE_SECURE=true` for the deployed frontend
+
+The frontend must include credentials in login, refresh, and logout requests
+(`credentials: "include"` with `fetch`, or `withCredentials: true` with Axios)
+so the browser stores and sends the HttpOnly refresh cookie.
 
 Select a Render instance with no more than 512 MiB of memory. The Docker image
 limits the JVM heap to 160 MiB and metaspace to 192 MiB, and bounds code cache, direct memory,
