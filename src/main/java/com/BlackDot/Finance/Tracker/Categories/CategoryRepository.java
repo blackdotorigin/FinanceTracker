@@ -17,6 +17,17 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     boolean existsByIdAndActiveTrueAndType(UUID id, TransactionType type);
 
+    boolean existsByIdAndActiveTrue(UUID id);
+
+    @Query("""
+           select count(c) > 0 from Category c join c.subCategories s
+           where c.id = :categoryId and s.id = :subCategoryId
+             and c.active = true and s.active = true
+           """)
+    boolean existsActivePair(
+            @Param("categoryId") UUID categoryId,
+            @Param("subCategoryId") UUID subCategoryId);
+
     @Query("""
            select count(c) > 0 from Category c join c.subCategories s
            where c.id = :categoryId and s.id = :subCategoryId

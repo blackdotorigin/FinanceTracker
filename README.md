@@ -135,3 +135,116 @@ the database migration.
 Without an ID, type, payment mode, category, or sub-category filter, the
 endpoint retains its existing current-month default. Pagination and sorting
 continue to use `page`, `size`, `sortBy`, and `direction`.
+
+## Budget limits
+
+All routes below require authentication. Each request operates only on the
+authenticated user's limits; do not send a `userId`. `categoryId` is required
+for every limit. Omit `subCategoryId` or send it as `null` for a category-wide
+limit. Include a `subCategoryId` for a sub-category limit. The sub-category
+must belong to the supplied category. A user can have a category limit and
+separate limits for each of its sub-categories.
+
+`limit` is a positive JSON number with up to 15 integer digits and 4 decimal
+places. The API stores the numeric amount as provided; it does not accept a
+currency field or perform currency conversion. Only active categories and
+active sub-categories can be selected. An unset limit has no row and is
+therefore absent from the list response.
+
+### List all configured limits
+
+`GET /api/v1/budget-limits`
+
+Success: `200 OK`. The response is an array; it is empty (`[]`) if the user has
+not configured any limits.
+
+```json
+[
+  {
+    "id": "a33d58fc-92ba-4f0c-86ac-25f48dcd4a0e",
+    "categoryId": "994039c0-f227-4b19-94e2-022e7744cf14",
+    "subCategoryId": null,
+    "limit": 5000.00
+  },
+  {
+    "id": "69eb19f5-1e22-47df-8996-5af542f3ae8c",
+    "categoryId": "994039c0-f227-4b19-94e2-022e7744cf14",
+    "subCategoryId": "27d36f40-e982-4c57-8f18-f67029f75cb5",
+    "limit": 1200.00
+  }
+]
+```
+
+Each item contains:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | UUID string | Identifier for this configured limit |
+| `categoryId` | UUID string | Category for the limit; present for both scopes |
+| `subCategoryId` | UUID string or `null` | `null` for a category-wide limit; otherwise the limited sub-category |
+| `limit` | number | Positive configured amount |
+
+### Create or set a limit
+
+`POST /api/v1/budget-limits`
+
+This endpoint creates a limit if the scope is new, or updates the existing
+limit for the same user/category/sub-category scope. The existing `id` remains
+the same on update. The request body for a category-wide limit is:
+
+```json
+{
+  "categoryId": "994039c0-f227-4b19-94e2-022e7744cf14",
+  "limit": 5000
+}
+```
+
+The request body for a sub-category limit is:
+
+```json
+{
+  "categoryId": "994039c0-f227-4b19-94e2-022e7744cf14",
+  "subCategoryId": "27d36f40-e982-4c57-8f18-f67029f75cb5",
+  "limit": 1200
+}
+```
+
+Success: `200 OK`, returning the created or updated limit in the same shape as
+one list item:
+
+```json
+{
+  "id": "a33d58fc-92ba-4f0c-86ac-25f48dcd4a0e",
+  "categoryId": "994039c0-f227-4b19-94e2-022e7744cf14",
+  "subCategoryId": null,
+  "limit": 5000.00
+}
+```
+
+### Replace a limit
+
+`PUT /api/v1/budget-limits`
+
+The request and response formats and behavior are the same as `POST`: it
+creates the scope if absent, or replaces its amount if present.
+
+### Remove a limit
+
+`DELETE /api/v1/budget-limits?categoryId=<category-uuid>`
+
+Removes the current user's category-wide limit. To remove a sub-category
+limit, include its ID:
+
+`DELETE /api/v1/budget-limits?categoryId=<category-uuid>&subCategoryId=<sub-category-uuid>`
+
+Success: `204 No Content` (empty response body). If the current user has no
+limit for the requested scope, the API returns `404 Not Found`.
+
+### Validation and authentication
+
+- Missing/invalid IDs, a non-positive amount, more than 15 integer digits or
+  more than 4 decimal places, an inactive category, or an inactive/unrelated
+  sub-category is rejected as a bad request (`400`).
+- Requests without valid authentication are rejected (`401`).
+- The list is user-specific: limits belonging to another user are never
+  returned or changed.

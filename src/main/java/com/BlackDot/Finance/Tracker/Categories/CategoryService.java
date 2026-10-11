@@ -54,6 +54,17 @@ public class CategoryService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public void validateBudgetSelection(UUID categoryId, UUID subCategoryId) {
+        if (subCategoryId == null) {
+            if (!categories.existsByIdAndActiveTrue(categoryId)) {
+                throw new BadRequestException("Invalid category");
+            }
+        } else if (!categories.existsActivePair(categoryId, subCategoryId)) {
+            throw new BadRequestException("Invalid category / sub-category combination");
+        }
+    }
+
     /** For rendering names. Includes inactive rows so old transactions keep their labels. */
     @Transactional(readOnly = true)
     public RefData lookup(Set<UUID> categoryIds, Set<UUID> subCategoryIds) {
