@@ -49,12 +49,24 @@ public class TransactionController {
     public PagedModel<TransactionResponse> list(
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+        @RequestParam(required = false) UUID id,
+        @RequestParam(required = false) TransactionType type,
+        @RequestParam(required = false) PaymentMode paymentMode,
+        @RequestParam(required = false) UUID categoryId,
+        @RequestParam(required = false) UUID subCategoryId,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size,
         @RequestParam(defaultValue = "DATE") String sortBy,
         @RequestParam(defaultValue = "ASC") String direction) {
 
-        return new PagedModel<>(service.list(from, to, buildPageable(page, size, sortBy, direction)));
+        Pageable pageable = buildPageable(page, size, sortBy, direction);
+        boolean hasAdvancedFilter = id != null || type != null || paymentMode != null
+                || categoryId != null || subCategoryId != null;
+        if (!hasAdvancedFilter) {
+            return new PagedModel<>(service.list(from, to, pageable));
+        }
+        return new PagedModel<>(service.search(
+                id, type, paymentMode, from, to, categoryId, subCategoryId, pageable));
     }
 
     @GetMapping("/graph")

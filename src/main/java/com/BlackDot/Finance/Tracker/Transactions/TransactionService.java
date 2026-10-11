@@ -44,7 +44,7 @@ public class TransactionService {
         categoryService.validateSelection(r.type(), r.categoryId(), r.subCategoryId());
         Transaction t = new Transaction();
         t.setUserId(CurrentUser.id());
-        apply(t, r.amount(), r.currency(), r.type(), r.transactionDate(),
+        apply(t, r.amount(), r.currency(), r.type(), r.paymentMode(), r.transactionDate(),
             r.description(), r.categoryId(), r.subCategoryId());
         Transaction saved = repo.save(t);
         userActivityService.recordTransaction(t.getUserId(), t.getTransactionDate());
@@ -60,14 +60,27 @@ public class TransactionService {
     public Page<TransactionResponse> list(LocalDate from, LocalDate to, Pageable pageable) {
         LocalDate start = from != null ? from : YearMonth.now().atDay(1);
         LocalDate end   = to   != null ? to   : YearMonth.now().atEndOfMonth();
-
-        if (start.isAfter(end))
-            throw new BadRequestException("'from' must be on or before 'to'");
-        if (ChronoUnit.DAYS.between(start, end) > MAX_RANGE_DAYS)
-            throw new BadRequestException("Date range cannot exceed 366 days");
+        validateDateRange(start, end);
 
         Page<Transaction> transactions =
                 repo.findByUserIdAndTransactionDateBetween(CurrentUser.id(), start, end, pageable);
+        return toResponses(transactions);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TransactionResponse> search(
+            UUID id, TransactionType type, PaymentMode paymentMode,
+            LocalDate from, LocalDate to, UUID categoryId, UUID subCategoryId,
+            Pageable pageable) {
+        validateDateRange(from, to);
+        Page<Transaction> transactions = repo.findAll(
+                TransactionSpecifications.search(CurrentUser.id(), id, type, paymentMode,
+                        from, to, categoryId, subCategoryId),
+                pageable);
+        return toResponses(transactions);
+    }
+
+    private Page<TransactionResponse> toResponses(Page<Transaction> transactions) {
         Set<UUID> categoryIds = new HashSet<>();
         Set<UUID> subCategoryIds = new HashSet<>();
         transactions.forEach(transaction -> {
@@ -78,6 +91,15 @@ public class TransactionService {
         });
         CategoryService.RefData refData = categoryService.lookup(categoryIds, subCategoryIds);
         return transactions.map(transaction -> TransactionResponse.from(transaction, refData));
+    }
+
+    private void validateDateRange(LocalDate from, LocalDate to) {
+        if (from != null && to != null) {
+            if (from.isAfter(to))
+                throw new BadRequestException("'from' must be on or before 'to'");
+            if (ChronoUnit.DAYS.between(from, to) > MAX_RANGE_DAYS)
+                throw new BadRequestException("Date range cannot exceed 366 days");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -128,7 +150,8 @@ public class TransactionService {
                 updateTransactionRequest.type(), updateTransactionRequest.categoryId(),
                 updateTransactionRequest.subCategoryId());
         apply(transaction, updateTransactionRequest.amount(), updateTransactionRequest.currency(),
-                updateTransactionRequest.type(), updateTransactionRequest.transactionDate(),
+                updateTransactionRequest.type(), updateTransactionRequest.paymentMode(),
+                updateTransactionRequest.transactionDate(),
                 updateTransactionRequest.description(), updateTransactionRequest.categoryId(),
                 updateTransactionRequest.subCategoryId());
         if (!previousDate.equals(transaction.getTransactionDate())) {
@@ -164,11 +187,12 @@ public class TransactionService {
     }
 
     private void apply(Transaction transaction, BigDecimal amount, String currency,
-                       TransactionType type, LocalDate date, String description,
+                       TransactionType type, PaymentMode paymentMode, LocalDate date, String description,
                        UUID categoryId, UUID subCategoryId) {
         transaction.setAmount(amount);
         transaction.setCurrency(currency);
         transaction.setType(type);
+        transaction.setPaymentMode(paymentMode);
         transaction.setTransactionDate(date);
         transaction.setDescription(description);
         transaction.setCategoryId(categoryId);

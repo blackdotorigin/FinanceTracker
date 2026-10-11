@@ -10,9 +10,10 @@ import com.BlackDot.Finance.Tracker.Categories.CategoryService;
 import com.BlackDot.Finance.Tracker.SubCategories.SubCategory;
 import com.BlackDot.Finance.Tracker.Transactions.Transaction;
 import com.BlackDot.Finance.Tracker.Transactions.TransactionType;
+import com.BlackDot.Finance.Tracker.Transactions.PaymentMode;
 
 public record TransactionResponse(
-    UUID id, BigDecimal amount, String currency, TransactionType type,
+    UUID id, BigDecimal amount, String currency, TransactionType type, PaymentMode paymentMode,
     LocalDate transactionDate, String description,
     Ref category, Ref subCategory, Instant createdAt) {
 
@@ -22,6 +23,7 @@ public record TransactionResponse(
         Category c = ref.categories().get(t.getCategoryId());
         SubCategory s = t.getSubCategoryId() == null ? null : ref.subCategories().get(t.getSubCategoryId());
         return new TransactionResponse(t.getId(), t.getAmount(), t.getCurrency(), t.getType(),
+                t.getPaymentMode(),
                 t.getTransactionDate(), t.getDescription(),
                 c == null ? null : new Ref(c.getId(), c.getName()),
                 s == null ? null : new Ref(s.getId(), s.getName()),

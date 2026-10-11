@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import com.BlackDot.Finance.Tracker.Transactions.TransactionType;
+import com.BlackDot.Finance.Tracker.Transactions.PaymentMode;
 import com.BlackDot.Finance.Tracker.Validation.NoMarkup;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -17,6 +18,7 @@ public record UpdateTransactionRequest(
     @NotNull @Positive @Digits(integer = 15, fraction = 4) BigDecimal amount,
     @NoMarkup @NotBlank @Pattern(regexp = "[A-Z]{3}") String currency,
     @NotNull TransactionType type,
+    @NotNull PaymentMode paymentMode,
     @NotNull LocalDate transactionDate,
     @NotNull UUID categoryId,
     UUID subCategoryId,              // optional

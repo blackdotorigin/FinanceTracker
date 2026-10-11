@@ -119,3 +119,19 @@ returns up to 10 of the current user's transactions in the current calendar
 week, ordered by transaction date descending. Use `period=month` for the
 current calendar month or `period=year` for the current calendar year. Weeks
 start on Monday; invalid period values return a bad request.
+
+## Transactions
+
+Every transaction has a required `paymentMode`: `CASH`, `CREDIT`, or
+`BANK_ACCOUNT`. Include it when creating or updating a transaction; it is also
+returned with transaction data. Existing transactions are assigned `CASH` by
+the database migration.
+
+`GET /api/v1/transactions` supports paginated filters for `id`, `type`
+(`INCOME` or `EXPENSE`), `paymentMode`, `from`, `to`, `categoryId`, and
+`subCategoryId`. Filters can be combined. Dates are inclusive and use
+`YYYY-MM-DD`; when both `from` and `to` are provided, the range cannot exceed
+366 days.
+Without an ID, type, payment mode, category, or sub-category filter, the
+endpoint retains its existing current-month default. Pagination and sorting
+continue to use `page`, `size`, `sortBy`, and `direction`.

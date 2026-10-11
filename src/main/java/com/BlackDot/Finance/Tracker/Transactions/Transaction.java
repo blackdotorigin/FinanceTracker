@@ -39,6 +39,10 @@ public class Transaction extends BaseEntity implements OwnedEntity {
     @Column(nullable = false, length = 10)
     private TransactionType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_mode", nullable = false, length = 20)
+    private PaymentMode paymentMode;
+
     @Column(name = "category_id", nullable = false)
     private UUID categoryId;
 
