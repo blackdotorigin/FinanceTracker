@@ -2,6 +2,8 @@ package com.BlackDot.Finance.Tracker.Auth;
 
 import com.BlackDot.Finance.Tracker.Users.User;
 import com.BlackDot.Finance.Tracker.Users.UserRepository;
+import com.BlackDot.Finance.Tracker.Auth.MobileOAuth.MobileOAuthExchangeRequest;
+import com.BlackDot.Finance.Tracker.Auth.MobileOAuth.MobileOAuthHandoffService;
 import com.BlackDot.Finance.Tracker.UserActivity.UserActivityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class AuthController {
     private final AuthenticationManager authManager;
     private final TokenService tokens;
     private final CookieFactory cookies;
+    private final MobileOAuthHandoffService mobileOAuthHandoffs;
     private final UserRepository users;
     private final UserActivityService userActivity;
 
@@ -47,6 +50,13 @@ public class AuthController {
             throw new UnauthorizedException("Missing refresh token");
         }
         return respond(tokens.rotate(raw));
+    }
+
+    @PostMapping("/mobile/exchange")
+    public ResponseEntity<TokenResponse> exchangeMobileOAuthCode(
+            @Valid @RequestBody MobileOAuthExchangeRequest request) {
+        return respond(mobileOAuthHandoffs.exchange(
+                request.code(), request.codeVerifier(), request.state()));
     }
 
     @PostMapping("/logout")
