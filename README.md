@@ -112,6 +112,290 @@ The response includes `from`, `to`, and a `days` array. Each day contains
 per user/date; the V9 migration also backfills dates from existing transactions.
 Historical login activity is unavailable before login tracking was introduced.
 
+## Dues and reminders
+
+All dues endpoints require authentication. Dues are scoped to `{userId}` in the
+route: the authenticated user must own that ID, unless the caller is an admin.
+Use the user's UUID from the signed-in user profile. Send the access token using
+`Authorization: Bearer {accessToken}`.
+
+### Endpoints
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/users/dues/template` | Load available reminder categories, subcategories, fields, frequencies, and statuses |
+| `GET` | `/api/v1/user/{userId}/dues` | List/filter a user's dues |
+| `POST` | `/api/v1/user/{userId}/dues` | Create a due |
+| `PUT` | `/api/v1/user/{userId}/dues/{dueId}` | Replace/update a due |
+| `DELETE` | `/api/v1/user/{userId}/dues/{dueId}` | Delete a due |
+
+There is no single-due `GET` endpoint. The template is database-backed and
+returns active categories with their active subcategories. Use the returned IDs
+when creating or updating dues; do not hardcode IDs or send category names.
+
+### Load template
+
+```http
+GET /api/v1/users/dues/template
+Authorization: Bearer {accessToken}
+```
+
+Response: `200 OK`.
+
+```json
+{
+  "categories": [
+    {
+      "id": "<category-uuid>",
+      "code": "SUBSCRIPTIONS",
+      "name": "Subscriptions",
+      "subcategories": [
+        {
+          "id": "<subcategory-uuid>",
+          "code": "NETFLIX",
+          "name": "Netflix"
+        },
+        {
+          "id": "<subcategory-uuid>",
+          "code": "SPOTIFY",
+          "name": "Spotify"
+        },
+        {
+          "id": "<subcategory-uuid>",
+          "code": "YOUTUBE",
+          "name": "YouTube"
+        },
+        {
+          "id": "<subcategory-uuid>",
+          "code": "SIM_RECHARGE",
+          "name": "SIM recharge"
+        },
+        {
+          "id": "<subcategory-uuid>",
+          "code": "METRO",
+          "name": "Metro"
+        },
+        {
+          "id": "<subcategory-uuid>",
+          "code": "OTHER",
+          "name": "Other subscription"
+        }
+      ]
+    },
+    {
+      "id": "<category-uuid>",
+      "code": "LENDING",
+      "name": "Lending",
+      "subcategories": [
+        { "id": "<subcategory-uuid>", "code": "PERSON", "name": "Person" },
+        { "id": "<subcategory-uuid>", "code": "FAMILY", "name": "Family" },
+        { "id": "<subcategory-uuid>", "code": "INVESTMENT", "name": "Investment" },
+        { "id": "<subcategory-uuid>", "code": "LOAN_EMI", "name": "Loan / EMI" },
+        { "id": "<subcategory-uuid>", "code": "CHIT", "name": "Chit" },
+        { "id": "<subcategory-uuid>", "code": "OTHER", "name": "Other lending" }
+      ]
+    },
+    {
+      "id": "<category-uuid>",
+      "code": "HOUSEHOLD",
+      "name": "Household",
+      "subcategories": [
+        { "id": "<subcategory-uuid>", "code": "GAS", "name": "Gas" },
+        { "id": "<subcategory-uuid>", "code": "WATER", "name": "Water" },
+        { "id": "<subcategory-uuid>", "code": "ELECTRICITY", "name": "Electricity" },
+        { "id": "<subcategory-uuid>", "code": "RENT", "name": "Rent" },
+        { "id": "<subcategory-uuid>", "code": "INTERNET", "name": "Internet" },
+        { "id": "<subcategory-uuid>", "code": "MAINTENANCE", "name": "Maintenance" },
+        { "id": "<subcategory-uuid>", "code": "OTHER", "name": "Other household" }
+      ]
+    },
+    {
+      "id": "<category-uuid>",
+      "code": "OTHER",
+      "name": "Other",
+      "subcategories": [
+        { "id": "<subcategory-uuid>", "code": "OTHER", "name": "Other" }
+      ]
+    }
+  ],
+  "fields": [
+    { "name": "title", "type": "string", "required": true, "description": "Short name for this due.", "defaultValue": null },
+    { "name": "description", "type": "string", "required": false, "description": "Additional details.", "defaultValue": null },
+    { "name": "categoryId", "type": "uuid", "required": true, "description": "ID of a category returned in categories.", "defaultValue": null },
+    { "name": "subCategoryId", "type": "uuid", "required": false, "description": "Optional subcategory ID belonging to categoryId.", "defaultValue": null },
+    { "name": "amount", "type": "decimal", "required": true, "description": "Positive amount, up to 4 decimals.", "defaultValue": null },
+    { "name": "currency", "type": "string", "required": true, "description": "Three-letter uppercase currency code.", "defaultValue": "INR" },
+    { "name": "dueDate", "type": "date", "required": true, "description": "Next due date in YYYY-MM-DD format.", "defaultValue": null },
+    { "name": "frequency", "type": "enum", "required": true, "description": "How often this due recurs.", "defaultValue": "ONCE" },
+    { "name": "frequencyInterval", "type": "integer", "required": true, "description": "Repeat every this many frequency units (1-120).", "defaultValue": "1" },
+    { "name": "reminderDaysBefore", "type": "integer[]", "required": true, "description": "Days before the due date to remind; use [] to disable.", "defaultValue": "[1,3,7]" },
+    { "name": "payeeName", "type": "string", "required": false, "description": "Person or organization to pay or collect from.", "defaultValue": null },
+    { "name": "reference", "type": "string", "required": false, "description": "Optional account, contract, or external reference.", "defaultValue": null },
+    { "name": "autoPay", "type": "boolean", "required": true, "description": "Whether the payment is marked for autopay.", "defaultValue": "false" },
+    { "name": "status", "type": "enum", "required": true, "description": "Current lifecycle state.", "defaultValue": "ACTIVE" }
+  ],
+  "frequencies": ["ONCE", "DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"],
+  "statuses": ["ACTIVE", "PAUSED", "COMPLETED"]
+}
+```
+
+The returned fields array describes the due form. Category/subcategory IDs and
+the list contents above are illustrative; use the actual IDs and choices in
+the response from your environment.
+
+### Create a due
+
+```http
+POST /api/v1/user/{userId}/dues
+Authorization: Bearer {accessToken}
+Content-Type: application/json
+```
+
+All request fields below must be present except `description`, `subCategoryId`,
+`payeeName`, and `reference`, which may be `null`.
+
+```json
+{
+  "title": "Netflix",
+  "description": "Monthly subscription",
+  "categoryId": "<SUBSCRIPTIONS category id from template>",
+  "subCategoryId": "<NETFLIX subcategory id from template>",
+  "amount": 649.00,
+  "currency": "INR",
+  "dueDate": "2026-11-01",
+  "frequency": "MONTHLY",
+  "frequencyInterval": 1,
+  "reminderDaysBefore": [1, 3, 7],
+  "payeeName": "Netflix",
+  "reference": null,
+  "autoPay": false,
+  "status": "ACTIVE"
+}
+```
+
+Success: `201 Created`. Response body is the created due (same shape as update
+response below). `Location` points to
+`/api/v1/user/{userId}/dues/{dueId}`.
+
+### List dues
+
+```http
+GET /api/v1/user/{userId}/dues
+Authorization: Bearer {accessToken}
+```
+
+Optional query parameters:
+
+| Parameter | Type | Meaning |
+| --- | --- | --- |
+| `categoryId` | UUID | Return dues in this category |
+| `subCategoryId` | UUID | Return dues in this subcategory |
+| `status` | Enum | `ACTIVE`, `PAUSED`, or `COMPLETED` |
+| `from` | Date | Include due dates on or after this date (`YYYY-MM-DD`) |
+| `to` | Date | Include due dates on or before this date (`YYYY-MM-DD`) |
+| `page` | Integer | Zero-based page; defaults to `0` |
+| `size` | Integer | Page size; defaults to `20`; range `1`-`100` |
+
+Filters can be combined. `from` must be on or before `to`. Results are sorted
+by due date ascending and then ID ascending.
+
+Example:
+
+```http
+GET /api/v1/user/{userId}/dues?categoryId=<uuid>&subCategoryId=<uuid>&status=ACTIVE&from=2026-10-01&to=2026-12-31&page=0&size=20
+```
+
+Success: `200 OK`.
+
+```json
+{
+  "content": [
+    {
+      "id": "<due-uuid>",
+      "title": "Netflix",
+      "description": "Monthly subscription",
+      "category": {
+        "id": "<category-uuid>",
+        "code": "SUBSCRIPTIONS",
+        "name": "Subscriptions"
+      },
+      "subCategory": {
+        "id": "<subcategory-uuid>",
+        "code": "NETFLIX",
+        "name": "Netflix"
+      },
+      "amount": 649.0000,
+      "currency": "INR",
+      "dueDate": "2026-11-01",
+      "frequency": "MONTHLY",
+      "frequencyInterval": 1,
+      "reminderDaysBefore": [1, 3, 7],
+      "payeeName": "Netflix",
+      "reference": null,
+      "autoPay": false,
+      "status": "ACTIVE",
+      "createdAt": "2026-10-13T14:25:00Z",
+      "updatedAt": "2026-10-13T14:25:00Z"
+    }
+  ],
+  "page": {
+    "size": 20,
+    "totalElements": 1,
+    "totalPages": 1,
+    "number": 0
+  }
+}
+```
+
+When no records match, `content` is an empty array.
+
+### Update a due
+
+`PUT` is a full replacement: send the complete create body, including all
+required fields.
+
+```http
+PUT /api/v1/user/{userId}/dues/{dueId}
+Authorization: Bearer {accessToken}
+Content-Type: application/json
+```
+
+Success: `200 OK`. Response is the updated due using the same object shape as
+an item in the list response.
+
+### Delete a due
+
+```http
+DELETE /api/v1/user/{userId}/dues/{dueId}
+Authorization: Bearer {accessToken}
+```
+
+Success: `204 No Content`; the response has no body.
+
+### Field validation and behavior
+
+- `title`: required, nonblank, maximum 120 characters.
+- `description`: optional, maximum 1,000 characters.
+- `categoryId`: required active category ID from the template.
+- `subCategoryId`: optional active subcategory ID; when supplied, it must
+  belong to `categoryId`.
+- `amount`: positive decimal, maximum 15 integer digits and 4 decimal places.
+- `currency`: three uppercase letters; the template suggests `INR`.
+- `dueDate`: required calendar date in `YYYY-MM-DD`.
+- `frequency`: `ONCE`, `DAILY`, `WEEKLY`, `MONTHLY`, `QUARTERLY`, or `YEARLY`.
+- `frequencyInterval`: integer from 1 to 120; must be `1` for `ONCE`.
+- `reminderDaysBefore`: required array of up to 30 unique integers from 0 to
+  365. Use `[]` to disable reminders; returned values are sorted ascending.
+- `payeeName`: optional, maximum 120 characters.
+- `reference`: optional, maximum 100 characters.
+- `autoPay`: required boolean flag; it does not initiate or authorize payment.
+- `status`: `ACTIVE`, `PAUSED`, or `COMPLETED`.
+
+The lookup tables are `due_categories` and `due_subcategories`. To add future
+choices, insert a category and its subcategories there; they appear in the
+template when active. The API stores due/reminder configuration but does not
+send notifications, execute payments, or advance recurring due dates.
+
 ## Transaction graph
 
 The authenticated endpoint `GET /api/v1/transactions/graph?period=week`
