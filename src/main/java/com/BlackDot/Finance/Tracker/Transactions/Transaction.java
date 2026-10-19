@@ -14,12 +14,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "transactions")
-@Getter @Setter @NoArgsConstructor
+@Getter @Setter
 public class Transaction extends BaseEntity implements OwnedEntity {
 
     @Id
@@ -53,6 +52,10 @@ public class Transaction extends BaseEntity implements OwnedEntity {
     private LocalDate transactionDate;
 
     private String description;
+
+    public Transaction() {
+        super();
+    }
 
     @Override
     public UUID getOwnerId() { 

@@ -13,7 +13,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -22,7 +21,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
     private final OAuthUserService oauthUsers;
     private final TokenService tokens;
@@ -30,6 +28,21 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
     private final CookieFactory cookies;
     private final AppProps props;
     private final UserActivityService userActivity;
+
+    public OAuthSuccessHandler(
+            OAuthUserService oauthUsers,
+            TokenService tokens,
+            MobileOAuthHandoffService mobileOAuthHandoffs,
+            CookieFactory cookies,
+            AppProps props,
+            UserActivityService userActivity) {
+        this.oauthUsers = oauthUsers;
+        this.tokens = tokens;
+        this.mobileOAuthHandoffs = mobileOAuthHandoffs;
+        this.cookies = cookies;
+        this.props = props;
+        this.userActivity = userActivity;
+    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,

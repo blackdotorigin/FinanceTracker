@@ -15,14 +15,16 @@ import org.springframework.web.bind.annotation.RestController;
 import com.BlackDot.Finance.Tracker.BudgetLimits.DTO.BudgetLimitResponse;
 import com.BlackDot.Finance.Tracker.BudgetLimits.DTO.SetBudgetLimitRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/budget-limits")
-@RequiredArgsConstructor
 public class UserBudgetLimitController {
 
     private final UserBudgetLimitService service;
+
+    public UserBudgetLimitController(UserBudgetLimitService service) {
+        this.service = service;
+    }
 
     @GetMapping
     public List<BudgetLimitResponse> list() {

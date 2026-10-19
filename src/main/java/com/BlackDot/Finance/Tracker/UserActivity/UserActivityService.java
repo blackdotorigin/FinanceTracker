@@ -17,16 +17,17 @@ import com.BlackDot.Finance.Tracker.CustomException.BadRequestException;
 import com.BlackDot.Finance.Tracker.UserActivity.DTO.UserActivityDayResponse;
 import com.BlackDot.Finance.Tracker.UserActivity.DTO.UserActivityResponse;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class UserActivityService {
 
     private static final int DEFAULT_DAYS = 30;
     private static final int MAX_DAYS = 366;
 
     private final UserActivityRepository repository;
+
+    public UserActivityService(UserActivityRepository repository) {
+        this.repository = repository;
+    }
 
     @Transactional
     public void recordLogin(UUID userId) {
@@ -36,6 +37,15 @@ public class UserActivityService {
     @Transactional
     public void recordTransaction(UUID userId, LocalDate activityDate) {
         repository.incrementTransaction(UUID.randomUUID(), userId, activityDate);
+    }
+
+    @Transactional
+    public void recordTransactions(UUID userId, Map<LocalDate, Integer> countsByDate) {
+        countsByDate.forEach((date, count) -> {
+            if (count > 0) {
+                repository.incrementTransactions(UUID.randomUUID(), userId, date, count);
+            }
+        });
     }
 
     @Transactional

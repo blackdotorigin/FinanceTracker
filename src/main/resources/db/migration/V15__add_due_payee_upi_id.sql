@@ -1,0 +1,1 @@
+ALTER TABLE dues ADD COLUMN payee_upi_id VARCHAR(100);

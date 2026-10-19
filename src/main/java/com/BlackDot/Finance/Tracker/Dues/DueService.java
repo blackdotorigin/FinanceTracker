@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -15,15 +16,26 @@ import com.BlackDot.Finance.Tracker.CustomException.ResourceNotFoundException;
 import com.BlackDot.Finance.Tracker.Dues.DTO.DueRequest;
 import com.BlackDot.Finance.Tracker.Dues.DTO.DueResponse;
 import com.BlackDot.Finance.Tracker.Dues.DTO.DueTemplateResponse;
-import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class DueService {
+
+    private static final Pattern UPI_ID_PATTERN =
+            Pattern.compile(
+                    "[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?@[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?");
 
     private final DueRepository repository;
     private final DueCategoryRepository categoryRepository;
     private final DueSubcategoryRepository subcategoryRepository;
+
+    public DueService(
+            DueRepository repository,
+            DueCategoryRepository categoryRepository,
+            DueSubcategoryRepository subcategoryRepository) {
+        this.repository = repository;
+        this.categoryRepository = categoryRepository;
+        this.subcategoryRepository = subcategoryRepository;
+    }
 
     @Transactional(readOnly = true)
     @PreAuthorize("@auth.canAccess(#id)")
@@ -124,6 +136,9 @@ public class DueService {
         due.setReminderDaysBefore(request.reminderDaysBefore().stream().distinct().sorted()
                 .mapToInt(Integer::intValue).toArray());
         due.setPayeeName(trimToNull(request.payeeName()));
+        if (request.payeeUpiId() != null) {
+            due.setPayeeUpiId(normalizeUpiId(request.payeeUpiId()));
+        }
         due.setReference(trimToNull(request.reference()));
         due.setAutoPay(request.autoPay());
         due.setStatus(request.status());
@@ -153,5 +168,16 @@ public class DueService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeUpiId(String value) {
+        String upiId = trimToNull(value);
+        if (upiId == null) {
+            return null;
+        }
+        if (upiId.length() > 100 || !UPI_ID_PATTERN.matcher(upiId).matches()) {
+            throw new BadRequestException("payeeUpiId must be a valid UPI ID of at most 100 characters");
+        }
+        return upiId;
     }
 }

@@ -13,12 +13,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "users") 
-@Getter @Setter @NoArgsConstructor
+@Getter @Setter
 public class User extends BaseEntity {
 
     @Id
@@ -49,4 +48,8 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Roles role = Roles.USER;
+
+    public User() {
+        super();
+    }
 }

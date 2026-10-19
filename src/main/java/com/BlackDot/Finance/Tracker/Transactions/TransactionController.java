@@ -10,7 +10,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PagedModel;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,19 +29,30 @@ import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.CreateTransactio
 import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.TransactionResponse;
 import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.UpdateTransactionRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/transactions")
-@RequiredArgsConstructor
 public class TransactionController {
 
     private final TransactionService service;
+    private final TransactionImportService importService;
+
+    public TransactionController(
+            TransactionService service,
+            TransactionImportService importService) {
+        this.service = service;
+        this.importService = importService;
+    }
 
     @PostMapping
     public ResponseEntity<TransactionResponse> create(@Valid @RequestBody CreateTransactionRequest r) {
         TransactionResponse created = service.create(r);
         return ResponseEntity.created(URI.create("/api/v1/transactions/" + created.id())).body(created);
+    }
+
+    @PostMapping(path = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public TransactionImportResponse importFile(@RequestParam("file") MultipartFile file) {
+        return importService.importFile(file);
     }
 
     @GetMapping("/{id}")

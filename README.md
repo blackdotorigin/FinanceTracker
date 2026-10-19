@@ -28,6 +28,18 @@ Use a JDBC URL (`jdbc:postgresql://host/database?...`) in `DB_URL`; keep the
 database username and password in their own variables. `.env` is ignored by
 Git and must never be committed.
 
+Local development is pinned to Java 25. The repository's `.mise.toml` selects
+Java 25.0.2. After installing that runtime (`mise install`), build or run
+Maven under it with:
+
+```sh
+mise exec -- bash ./mvnw clean test
+mise exec -- bash ./mvnw spring-boot:run
+```
+
+Verify the active Maven runtime with `mise exec -- bash ./mvnw -version`; it should
+report Java 25. Docker builds and runs with Eclipse Temurin 25 as well.
+
 Set `JWT_SECRET` to a random value of at least 32 bytes. OAuth sign-in requires
 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, and
 `GITHUB_CLIENT_SECRET`. The frontend origin can be configured with `FRONTEND_URL`. Set
@@ -111,6 +123,157 @@ The response includes `from`, `to`, and a `days` array. Each day contains
 `date`, `active`, `transactionCount`, and `loginCount`. Activity is stored once
 per user/date; the V9 migration also backfills dates from existing transactions.
 Historical login activity is unavailable before login tracking was introduced.
+
+## Bulk transaction import
+
+### UI flow
+
+1. Require the user to sign in; this is an authenticated endpoint. Send the
+   access token using `Authorization: Bearer <access-token>`.
+2. Load `GET /api/v1/categories` and build category/subcategory selectors from
+   the returned IDs and names. The optional `type=INCOME` or `type=EXPENSE`
+   query filters the list. Use each category's `type` to keep the subcategory
+   choices and transaction direction consistent.
+3. Let the user select a `.csv` or `.xlsx` file. XLSX reads only the first
+   worksheet. The file limit is 5 MB and the import limit is 1,000 non-empty
+   transaction rows.
+4. Bank statements often do not contain FinanceTracker category columns. For
+   those files, the UI should parse the file locally, show a review table, let
+   the user assign a category and optional subcategory to each row (with a
+   convenient bulk-assign action), and upload a normalized CSV containing those
+   assignments. Do not guess categories from merchant descriptions. The API
+   currently has no server-side preview or per-row category-mapping endpoint.
+5. Submit the file and wait for the response. The API validates every row
+   before saving any: a row error means **zero** transactions were imported.
+   Display the errors next to the matching one-based spreadsheet row, allow
+   corrections, and ask the user to retry. On success, show `importedCount`.
+6. Warn users that submitting the same statement again creates duplicate
+   transactions; this endpoint does not deduplicate statement rows.
+
+Fetch active categories:
+
+```http
+GET /api/v1/categories
+Authorization: Bearer <access-token>
+```
+
+Example response:
+
+```json
+[
+  {
+    "id": "category-uuid",
+    "name": "Food",
+    "type": "EXPENSE",
+    "icon": "restaurant",
+    "color": "#...",
+    "subCategories": [
+      { "id": "subcategory-uuid", "name": "Dining", "icon": "..." }
+    ]
+  }
+]
+```
+
+Upload with browser `fetch`. Let the browser set the multipart boundary; do not
+set the `Content-Type` header manually:
+
+```js
+const formData = new FormData();
+formData.append("file", file);
+
+const response = await fetch(`${apiBaseUrl}/api/v1/transactions/import`, {
+  method: "POST",
+  headers: { Authorization: `Bearer ${accessToken}` },
+  body: formData,
+});
+
+const result = await response.json();
+if (!response.ok) {
+  // File-level failure; response is a ProblemDetail (for example, unsupported
+  // file, missing required columns, corrupt workbook, or file too large).
+  throw new Error(result.detail ?? "Could not import transactions");
+}
+if (result.errors.length > 0) {
+  // Validation failure; the import is atomic and importedCount is zero.
+  renderRowErrors(result.errors);
+} else {
+  showImportSuccess(result.importedCount);
+}
+```
+
+### File format and categorization
+
+The header row must include `date`, `description`, and `category`, plus either
+an `amount` column or both `debit` and `credit` columns. Headers are
+case-insensitive; spaces and punctuation are ignored. Recognized aliases:
+
+| Data | Accepted headers |
+| --- | --- |
+| Date | `date`, `transactionDate`, `valueDate`, `postingDate` |
+| Description | `description`, `narration`, `particulars`, `details`, `transactionDetails`, `merchant` |
+| Signed amount | `amount`, `transactionAmount` |
+| Debit | `debit`, `withdrawal`, `moneyOut` |
+| Credit | `credit`, `deposit`, `moneyIn` |
+| Category | `category`, `categoryName`, `categoryId` |
+| Subcategory | `subcategory`, `subcategoryName`, `subcategoryId` |
+| Currency | `currency`, `currencyCode` |
+| Type | `type`, `transactionType` |
+| Payment mode | `paymentMode`, `paymentMethod`, `mode` |
+
+Category values must exactly match an active category name or UUID. A
+subcategory is optional, but if present must match an active subcategory under
+the selected category (or its UUID). Names are case-insensitive. Duplicate
+category/subcategory names are ambiguous; use IDs in that case. Invalid or
+ambiguous categories are reported rather than guessed. Use IDs from the
+category lookup when generating the normalized file.
+
+Currency defaults to the signed-in user's default currency. Type is derived
+from the selected category; if supplied, it must match. Negative signed amounts
+mean expenses; positive amounts use the category's type. With debit/credit
+columns, exactly one side must be greater than zero and its direction must
+agree with the selected category. Payment mode defaults to `BANK_ACCOUNT`.
+Accepted dates are ISO `yyyy-MM-dd`, day-first `d/M/yyyy` or `d-M-yyyy`, and
+English month-name dates such as `17 Oct 2026`.
+
+Example normalized CSV:
+
+```csv
+date,description,amount,currency,category,subcategory,paymentMode
+2026-10-16,Coffee,-125.50,INR,category-uuid,subcategory-uuid,BANK_ACCOUNT
+2026-10-17,Salary,75000.00,INR,Salary-category-uuid,,BANK_ACCOUNT
+```
+
+### API response handling
+
+Successful import:
+
+```json
+{ "importedCount": 2, "errors": [] }
+```
+
+Validation response (`200 OK`, with no transactions saved):
+
+```json
+{
+  "importedCount": 0,
+  "errors": [
+    {
+      "rowNumber": 3,
+      "messages": [
+        "category does not match an active category name or ID",
+        "subcategory cannot be checked until category is valid"
+      ]
+    }
+  ]
+}
+```
+
+The `rowNumber` is one-based and includes the header row (so the first data row
+is row 2). Each row can have multiple validation messages. File-level problems
+such as unsupported extensions, missing required headers, invalid files, or
+more than 1,000 rows return `400 Bad Request` with a ProblemDetail `detail`
+message instead of this row-error response. Oversize multipart requests may be
+rejected by the server before reaching the controller.
 
 ## Dues and reminders
 
@@ -252,7 +415,7 @@ Content-Type: application/json
 ```
 
 All request fields below must be present except `description`, `subCategoryId`,
-`payeeName`, and `reference`, which may be `null`.
+`payeeName`, `payeeUpiId`, and `reference`, which may be `null`.
 
 ```json
 {
@@ -267,6 +430,7 @@ All request fields below must be present except `description`, `subCategoryId`,
   "frequencyInterval": 1,
   "reminderDaysBefore": [1, 3, 7],
   "payeeName": "Netflix",
+  "payeeUpiId": "someone@oksbi",
   "reference": null,
   "autoPay": false,
   "status": "ACTIVE"
@@ -331,6 +495,7 @@ Success: `200 OK`.
       "frequencyInterval": 1,
       "reminderDaysBefore": [1, 3, 7],
       "payeeName": "Netflix",
+      "payeeUpiId": "someone@oksbi",
       "reference": null,
       "autoPay": false,
       "status": "ACTIVE",
@@ -352,7 +517,8 @@ When no records match, `content` is an empty array.
 ### Update a due
 
 `PUT` is a full replacement: send the complete create body, including all
-required fields.
+required fields. If `payeeUpiId` is omitted or `null`, its existing value is
+preserved; provide an empty string to clear it.
 
 ```http
 PUT /api/v1/user/{userId}/dues/{dueId}
@@ -387,6 +553,9 @@ Success: `204 No Content`; the response has no body.
 - `reminderDaysBefore`: required array of up to 30 unique integers from 0 to
   365. Use `[]` to disable reminders; returned values are sorted ascending.
 - `payeeName`: optional, maximum 120 characters.
+- `payeeUpiId`: optional, trimmed, maximum 100 characters, and must have a
+  basic `recipient@handle` shape. This value is stored and returned only;
+  FinanceFlow does not initiate a UPI transfer or verify its status.
 - `reference`: optional, maximum 100 characters.
 - `autoPay`: required boolean flag; it does not initiate or authorize payment.
 - `status`: `ACTIVE`, `PAUSED`, or `COMPLETED`.

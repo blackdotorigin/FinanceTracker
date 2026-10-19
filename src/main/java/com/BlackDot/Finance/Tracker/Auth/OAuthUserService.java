@@ -6,18 +6,25 @@ import java.util.UUID;
 import com.BlackDot.Finance.Tracker.Roles.Roles;
 import com.BlackDot.Finance.Tracker.Users.User;
 import com.BlackDot.Finance.Tracker.Users.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class OAuthUserService {
     private final UserRepository users;
     private final UserIdentityRepository identities;
     private final RefreshTokenRepository refreshTokens;
+
+    public OAuthUserService(
+            UserRepository users,
+            UserIdentityRepository identities,
+            RefreshTokenRepository refreshTokens) {
+        this.users = users;
+        this.identities = identities;
+        this.refreshTokens = refreshTokens;
+    }
 
     @Transactional
     public User findOrCreate(OAuthProfile profile) {

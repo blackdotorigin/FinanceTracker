@@ -1,15 +1,17 @@
 package com.BlackDot.Finance.Tracker.Auth;
 
 import com.BlackDot.Finance.Tracker.AppProps;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class CookieFactory {
     public static final String REFRESH = "refresh_token";
     private final AppProps props;
+
+    public CookieFactory(AppProps props) {
+        this.props = props;
+    }
 
     public ResponseCookie refresh(String raw) {
         return base(raw).maxAge(props.jwt().refreshTtl()).build();

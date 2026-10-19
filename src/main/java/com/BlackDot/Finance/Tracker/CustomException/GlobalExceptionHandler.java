@@ -10,6 +10,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ProblemDetail> badRequest(BadRequestException exception) {
+        return ResponseEntity.badRequest()
+                .body(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage()));
+    }
+
     @ExceptionHandler({UnauthorizedException.class, AuthenticationException.class})
     public ResponseEntity<ProblemDetail> unauthorized(Exception exception) {
         String detail = exception instanceof UnauthorizedException

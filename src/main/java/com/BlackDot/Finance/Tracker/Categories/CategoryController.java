@@ -11,14 +11,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.BlackDot.Finance.Tracker.Transactions.TransactionType;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/categories")
-@RequiredArgsConstructor
 public class CategoryController {
 
     private final CategoryService service;
+
+    public CategoryController(CategoryService service) {
+        this.service = service;
+    }
 
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> tree(

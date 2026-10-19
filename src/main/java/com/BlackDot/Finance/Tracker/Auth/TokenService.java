@@ -10,7 +10,6 @@ import java.util.HexFormat;
 import com.BlackDot.Finance.Tracker.AppProps;
 import com.BlackDot.Finance.Tracker.Users.User;
 import com.BlackDot.Finance.Tracker.Users.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -20,13 +19,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class TokenService {
     private final JwtEncoder encoder;
     private final AppProps props;
     private final RefreshTokenRepository refreshTokens;
     private final UserRepository users;
     private final SecureRandom random = new SecureRandom();
+
+    public TokenService(JwtEncoder encoder, AppProps props,
+                        RefreshTokenRepository refreshTokens, UserRepository users) {
+        this.encoder = encoder;
+        this.props = props;
+        this.refreshTokens = refreshTokens;
+        this.users = users;
+    }
 
     @Transactional
     public AuthTokens issue(User user) {

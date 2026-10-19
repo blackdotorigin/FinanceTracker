@@ -6,12 +6,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.BlackDot.Finance.Tracker.Users.UserRepository;
-import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class AppUserDetailsService implements UserDetailsService {
     private final UserRepository repo;
+
+    public AppUserDetailsService(UserRepository repo) {
+        this.repo = repo;
+    }
 
     @Override
     public UserDetails loadUserByUsername(String username) {

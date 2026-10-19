@@ -9,14 +9,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "mobile_oauth_handoffs")
 @Getter
 @Setter
-@NoArgsConstructor
 public class MobileOAuthHandoff {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -42,4 +40,8 @@ public class MobileOAuthHandoff {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
+
+    public MobileOAuthHandoff() {
+        super();
+    }
 }

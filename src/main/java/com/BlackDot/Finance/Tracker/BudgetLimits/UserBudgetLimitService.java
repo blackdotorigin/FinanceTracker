@@ -10,14 +10,19 @@ import com.BlackDot.Finance.Tracker.BudgetLimits.DTO.BudgetLimitResponse;
 import com.BlackDot.Finance.Tracker.BudgetLimits.DTO.SetBudgetLimitRequest;
 import com.BlackDot.Finance.Tracker.Categories.CategoryService;
 import com.BlackDot.Finance.Tracker.CustomException.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class UserBudgetLimitService {
 
     private final UserBudgetLimitRepository repository;
     private final CategoryService categoryService;
+
+    public UserBudgetLimitService(
+            UserBudgetLimitRepository repository,
+            CategoryService categoryService) {
+        this.repository = repository;
+        this.categoryService = categoryService;
+    }
 
     @Transactional(readOnly = true)
     public List<BudgetLimitResponse> list() {

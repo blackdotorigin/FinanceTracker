@@ -16,14 +16,18 @@ import com.BlackDot.Finance.Tracker.SubCategories.SubCategoryRepository;
 import com.BlackDot.Finance.Tracker.SubCategories.SubCategoryResponse;
 import com.BlackDot.Finance.Tracker.Transactions.TransactionType;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class CategoryService {
 
     private final CategoryRepository categories;
     private final SubCategoryRepository subCategories;
+
+    public CategoryService(
+            CategoryRepository categories,
+            SubCategoryRepository subCategories) {
+        this.categories = categories;
+        this.subCategories = subCategories;
+    }
 
     public record RefData(Map<UUID, Category> categories, Map<UUID, SubCategory> subCategories) {}
 

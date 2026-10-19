@@ -1,6 +1,7 @@
 package com.BlackDot.Finance.Tracker.Dues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
@@ -38,6 +39,9 @@ class DueServiceTest {
 
     @Autowired
     private DueService service;
+
+    @Autowired
+    private DueRepository repository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -112,14 +116,69 @@ class DueServiceTest {
                 DueFrequency.MONTHLY, 1, List.of(), DueStatus.ACTIVE)));
     }
 
+    @Test
+    void storesReturnsAndUpdatesPayeeUpiId() {
+        UUID userId = createUser();
+        authenticate(userId);
+        UUID householdId = categoryId("HOUSEHOLD");
+
+        DueResponse created = service.create(userId, request(
+                "Rent", householdId, null, DueFrequency.MONTHLY, 1,
+                List.of(1, 3, 7), DueStatus.ACTIVE, "  someone@oksbi  "));
+
+        assertEquals("someone@oksbi", created.payeeUpiId());
+        repository.flush();
+        assertEquals("someone@oksbi", jdbcTemplate.queryForObject(
+                "SELECT payee_upi_id FROM dues WHERE id = ?", String.class, created.id()));
+        assertEquals("someone@oksbi", service.list(userId, null, null, null,
+                null, null, pageable()).getContent().getFirst().payeeUpiId());
+
+        DueResponse unchanged = service.update(userId, created.id(), request(
+                "Rent", householdId, null, DueFrequency.MONTHLY, 1,
+                List.of(1, 3, 7), DueStatus.ACTIVE, null));
+        assertEquals("someone@oksbi", unchanged.payeeUpiId());
+
+        DueResponse cleared = service.update(userId, created.id(), request(
+                "Rent", householdId, null, DueFrequency.MONTHLY, 1,
+                List.of(1, 3, 7), DueStatus.ACTIVE, "  "));
+        assertNull(cleared.payeeUpiId());
+        repository.flush();
+        assertNull(jdbcTemplate.queryForObject(
+                "SELECT payee_upi_id FROM dues WHERE id = ?", String.class, created.id()));
+    }
+
+    @Test
+    void acceptsMissingUpiIdsAndRejectsMalformedUpiIds() {
+        UUID userId = createUser();
+        authenticate(userId);
+        UUID otherId = categoryId("OTHER");
+
+        DueResponse created = service.create(userId, request(
+                "Reminder", otherId, null, DueFrequency.ONCE, 1,
+                List.of(), DueStatus.ACTIVE));
+        assertNull(created.payeeUpiId());
+
+        assertThrows(BadRequestException.class, () -> service.create(userId, request(
+                "Reminder", otherId, null, DueFrequency.ONCE, 1,
+                List.of(), DueStatus.ACTIVE, "not-a-upi-id")));
+    }
+
     private DueRequest request(
             String title, UUID categoryId, UUID subCategoryId,
             DueFrequency frequency, int interval,
             List<Integer> reminders, DueStatus status) {
+        return request(title, categoryId, subCategoryId, frequency, interval,
+                reminders, status, null);
+    }
+
+    private DueRequest request(
+            String title, UUID categoryId, UUID subCategoryId,
+            DueFrequency frequency, int interval,
+            List<Integer> reminders, DueStatus status, String payeeUpiId) {
         return new DueRequest(
                 title, null, categoryId, subCategoryId, new BigDecimal("649.00"), "INR",
                 LocalDate.of(2026, 11, 1), frequency, interval, reminders,
-                title, null, false, status);
+                title, payeeUpiId, null, false, status);
     }
 
     private UUID categoryId(String code) {

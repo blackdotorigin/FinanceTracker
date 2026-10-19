@@ -20,17 +20,24 @@ import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.TransactionRespo
 import com.BlackDot.Finance.Tracker.Users.UserService;
 import com.BlackDot.Finance.Tracker.Users.DTO.UserResponse;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/admin")
 @PreAuthorize("hasRole('ADMIN')")
-@RequiredArgsConstructor
 public class AdminController {
 
     private final UserService userService;
     private final TransactionRepository tnxrepository;
     private final CategoryService categoryService;
+
+    public AdminController(
+            UserService userService,
+            TransactionRepository tnxrepository,
+            CategoryService categoryService) {
+        this.userService = userService;
+        this.tnxrepository = tnxrepository;
+        this.categoryService = categoryService;
+    }
 
     @GetMapping("/users/{userId}/transactions")
     public PagedModel<TransactionResponse> userTransactions(

@@ -17,14 +17,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "dues")
 @Getter
 @Setter
-@NoArgsConstructor
 public class Due extends BaseEntity implements OwnedEntity {
 
     @Id
@@ -70,6 +68,9 @@ public class Due extends BaseEntity implements OwnedEntity {
     @Column(name = "payee_name", length = 120)
     private String payeeName;
 
+    @Column(name = "payee_upi_id", length = 100)
+    private String payeeUpiId;
+
     @Column(length = 100)
     private String reference;
 
@@ -79,6 +80,10 @@ public class Due extends BaseEntity implements OwnedEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 15)
     private DueStatus status;
+
+    public Due() {
+        super();
+    }
 
     @Override
     public UUID getOwnerId() {

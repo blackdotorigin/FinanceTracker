@@ -14,17 +14,24 @@ import com.BlackDot.Finance.Tracker.Roles.Roles;
 import com.BlackDot.Finance.Tracker.Users.DTO.CreateUserRequest;
 import com.BlackDot.Finance.Tracker.Users.DTO.UpdateUserRequest;
 import com.BlackDot.Finance.Tracker.Users.DTO.UserResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class UserService {
     private final UserRepository repo;
     private final PasswordEncoder encoder;
     private final AuthorizationService authservice;
+
+    public UserService(
+            UserRepository repo,
+            PasswordEncoder encoder,
+            AuthorizationService authservice) {
+        this.repo = repo;
+        this.encoder = encoder;
+        this.authservice = authservice;
+    }
 
     @Transactional
     public UserResponse create(CreateUserRequest createUserRequest) {

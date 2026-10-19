@@ -9,14 +9,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "user_identities")
 @Getter
 @Setter
-@NoArgsConstructor
 public class UserIdentity extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -30,4 +28,8 @@ public class UserIdentity extends BaseEntity {
 
     @Column(name = "provider_user_id", nullable = false)
     private String providerUserId;
+
+    public UserIdentity() {
+        super();
+    }
 }

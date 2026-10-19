@@ -12,7 +12,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
@@ -21,7 +20,6 @@ import lombok.Setter;
 })
 @Getter
 @Setter
-@NoArgsConstructor
 public class UserActivity extends BaseEntity {
 
     @Id
@@ -39,4 +37,8 @@ public class UserActivity extends BaseEntity {
 
     @Column(name = "login_count", nullable = false)
     private int loginCount;
+
+    public UserActivity() {
+        super();
+    }
 }

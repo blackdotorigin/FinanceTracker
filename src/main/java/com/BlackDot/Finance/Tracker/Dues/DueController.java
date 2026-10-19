@@ -25,14 +25,16 @@ import com.BlackDot.Finance.Tracker.Dues.DTO.DueRequest;
 import com.BlackDot.Finance.Tracker.Dues.DTO.DueResponse;
 import com.BlackDot.Finance.Tracker.Dues.DTO.DueTemplateResponse;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1")
-@RequiredArgsConstructor
 public class DueController {
 
     private final DueService service;
+
+    public DueController(DueService service) {
+        this.service = service;
+    }
 
     @GetMapping("/users/dues/template")
     public DueTemplateResponse template() {

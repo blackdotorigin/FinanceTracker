@@ -6,7 +6,6 @@ import com.BlackDot.Finance.Tracker.Auth.MobileOAuth.MobileOAuthExchangeRequest;
 import com.BlackDot.Finance.Tracker.Auth.MobileOAuth.MobileOAuthHandoffService;
 import com.BlackDot.Finance.Tracker.UserActivity.UserActivityService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@RequiredArgsConstructor
 public class AuthController {
     private final AuthenticationManager authManager;
     private final TokenService tokens;
@@ -29,6 +27,21 @@ public class AuthController {
     private final MobileOAuthHandoffService mobileOAuthHandoffs;
     private final UserRepository users;
     private final UserActivityService userActivity;
+
+    public AuthController(
+            AuthenticationManager authManager,
+            TokenService tokens,
+            CookieFactory cookies,
+            MobileOAuthHandoffService mobileOAuthHandoffs,
+            UserRepository users,
+            UserActivityService userActivity) {
+        this.authManager = authManager;
+        this.tokens = tokens;
+        this.cookies = cookies;
+        this.mobileOAuthHandoffs = mobileOAuthHandoffs;
+        this.users = users;
+        this.userActivity = userActivity;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {

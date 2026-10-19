@@ -11,12 +11,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "sub_categories")
-@Getter @Setter @NoArgsConstructor
+@Getter @Setter
 public class SubCategory extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.UUID)
@@ -35,4 +34,8 @@ public class SubCategory extends BaseEntity {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    public SubCategory() {
+        super();
+    }
 }

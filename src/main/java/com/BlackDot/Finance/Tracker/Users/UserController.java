@@ -18,13 +18,15 @@ import com.BlackDot.Finance.Tracker.Users.DTO.CreateUserRequest;
 import com.BlackDot.Finance.Tracker.Users.DTO.UpdateUserRequest;
 import com.BlackDot.Finance.Tracker.Users.DTO.UserResponse;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/users")
-@RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @PostMapping
     public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest createUserRequest) {

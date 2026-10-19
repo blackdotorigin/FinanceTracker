@@ -18,12 +18,11 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "categories")
-@Getter @Setter @NoArgsConstructor
+@Getter @Setter
 public class Category extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.UUID)
@@ -53,4 +52,8 @@ public class Category extends BaseEntity {
             joinColumns = @JoinColumn(name = "category_id"),
             inverseJoinColumns = @JoinColumn(name = "sub_category_id"))
     private Set<SubCategory> subCategories = new HashSet<>();
+
+    public Category() {
+        super();
+    }
 }

@@ -8,14 +8,15 @@ import org.springframework.web.bind.annotation.RestController;
 import com.BlackDot.Finance.Tracker.Auth.CurrentUser;
 import com.BlackDot.Finance.Tracker.UserActivity.DTO.UserActivityResponse;
 
-import lombok.RequiredArgsConstructor;
-
 @RestController
 @RequestMapping("/api/v1/user-activity")
-@RequiredArgsConstructor
 public class UserActivityController {
 
     private final UserActivityService service;
+
+    public UserActivityController(UserActivityService service) {
+        this.service = service;
+    }
 
     @GetMapping
     public UserActivityResponse getActivity(

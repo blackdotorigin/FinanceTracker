@@ -14,12 +14,10 @@ import com.BlackDot.Finance.Tracker.Auth.UnauthorizedException;
 import com.BlackDot.Finance.Tracker.UserActivity.UserActivityService;
 import com.BlackDot.Finance.Tracker.Users.User;
 import com.BlackDot.Finance.Tracker.Users.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class MobileOAuthHandoffService {
     private static final Duration HANDOFF_TTL = Duration.ofSeconds(60);
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -27,6 +25,17 @@ public class MobileOAuthHandoffService {
     private final UserRepository users;
     private final TokenService tokens;
     private final UserActivityService userActivity;
+
+    public MobileOAuthHandoffService(
+            MobileOAuthHandoffRepository handoffs,
+            UserRepository users,
+            TokenService tokens,
+            UserActivityService userActivity) {
+        this.handoffs = handoffs;
+        this.users = users;
+        this.tokens = tokens;
+        this.userActivity = userActivity;
+    }
 
     @Transactional
     public String issue(User user, String state, String codeChallenge) {

@@ -11,14 +11,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "user_budget_limit")
 @Getter
 @Setter
-@NoArgsConstructor
 public class UserBudgetLimit extends BaseEntity {
 
     @Id
@@ -36,4 +34,8 @@ public class UserBudgetLimit extends BaseEntity {
 
     @Column(name = "limit_amount", nullable = false, precision = 19, scale = 4)
     private BigDecimal limitAmount;
+
+    public UserBudgetLimit() {
+        super();
+    }
 }

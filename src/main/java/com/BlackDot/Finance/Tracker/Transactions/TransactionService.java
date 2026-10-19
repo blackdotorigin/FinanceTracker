@@ -26,10 +26,8 @@ import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.CreateTransactio
 import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.TransactionResponse;
 import com.BlackDot.Finance.Tracker.Transactions.TransactionDTO.UpdateTransactionRequest;
 import com.BlackDot.Finance.Tracker.UserActivity.UserActivityService;
-import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class TransactionService {
 
     private final TransactionRepository repo;
@@ -38,6 +36,17 @@ public class TransactionService {
     private final UserActivityService userActivityService;
     private static final long MAX_RANGE_DAYS = 366;
     private static final int GRAPH_LIMIT = 10;
+
+    public TransactionService(
+            TransactionRepository repo,
+            AuthorizationService auth,
+            CategoryService categoryService,
+            UserActivityService userActivityService) {
+        this.repo = repo;
+        this.auth = auth;
+        this.categoryService = categoryService;
+        this.userActivityService = userActivityService;
+    }
 
     @Transactional
     public TransactionResponse create(CreateTransactionRequest r) {
