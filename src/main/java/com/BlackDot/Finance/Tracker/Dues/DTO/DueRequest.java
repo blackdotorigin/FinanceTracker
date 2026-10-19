@@ -28,6 +28,7 @@ public record DueRequest(
         @NotNull @Size(max = 30) List<@NotNull @Min(0) @Max(365) Integer> reminderDaysBefore,
         @NoMarkup @Size(max = 120) String payeeName,
         String payeeUpiId,
+        @Size(max = 30) String payeePhoneNumber,
         @NoMarkup @Size(max = 100) String reference,
         boolean autoPay,
         @NotNull DueStatus status) {}

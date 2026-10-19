@@ -32,6 +32,7 @@ public record DueTemplateResponse(
                 new FieldOption("frequencyInterval", "integer", true, "Repeat every this many frequency units (1-120).", "1"),
                 new FieldOption("reminderDaysBefore", "integer[]", true, "Days before the due date to remind; use [] to disable.", "[1,3,7]"),
                 new FieldOption("payeeName", "string", false, "Person or organization to pay or collect from.", null),
+                new FieldOption("payeePhoneNumber", "string", false, "Phone number with optional spaces, dots, hyphens, parentheses, or leading +; up to 30 characters.", null),
                 new FieldOption("reference", "string", false, "Optional account, contract, or external reference.", null),
                 new FieldOption("autoPay", "boolean", true, "Whether the payment is marked for autopay.", "false"),
                 new FieldOption("status", "enum", true, "Current lifecycle state.", "ACTIVE"));

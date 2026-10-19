@@ -163,22 +163,76 @@ class DueServiceTest {
                 List.of(), DueStatus.ACTIVE, "not-a-upi-id")));
     }
 
+    @Test
+    void storesReturnsAndUpdatesPayeePhoneNumber() {
+        UUID userId = createUser();
+        authenticate(userId);
+        UUID householdId = categoryId("HOUSEHOLD");
+        String phoneNumber = "+91 98765-43210";
+
+        DueResponse created = service.create(userId, request(
+                "Rent", householdId, null, DueFrequency.MONTHLY, 1,
+                List.of(1, 3, 7), DueStatus.ACTIVE, null, phoneNumber));
+
+        assertEquals(phoneNumber, created.payeePhoneNumber());
+        repository.flush();
+        assertEquals(phoneNumber, jdbcTemplate.queryForObject(
+                "SELECT payee_phone_number FROM dues WHERE id = ?", String.class, created.id()));
+        assertEquals(phoneNumber, service.list(userId, null, null, null,
+                null, null, pageable()).getContent().getFirst().payeePhoneNumber());
+
+        DueResponse unchanged = service.update(userId, created.id(), request(
+                "Rent", householdId, null, DueFrequency.MONTHLY, 1,
+                List.of(1, 3, 7), DueStatus.ACTIVE, null, null));
+        assertEquals(phoneNumber, unchanged.payeePhoneNumber());
+
+        DueResponse cleared = service.update(userId, created.id(), request(
+                "Rent", householdId, null, DueFrequency.MONTHLY, 1,
+                List.of(1, 3, 7), DueStatus.ACTIVE, null, "  "));
+        assertNull(cleared.payeePhoneNumber());
+        repository.flush();
+        assertNull(jdbcTemplate.queryForObject(
+                "SELECT payee_phone_number FROM dues WHERE id = ?", String.class, created.id()));
+    }
+
+    @Test
+    void rejectsMalformedPayeePhoneNumbers() {
+        UUID userId = createUser();
+        authenticate(userId);
+
+        assertThrows(BadRequestException.class, () -> service.create(userId, request(
+                "Reminder", categoryId("OTHER"), null, DueFrequency.ONCE, 1,
+                List.of(), DueStatus.ACTIVE, null, "phone-number")));
+        assertThrows(BadRequestException.class, () -> service.create(userId, request(
+                "Reminder", categoryId("OTHER"), null, DueFrequency.ONCE, 1,
+                List.of(), DueStatus.ACTIVE, null, "1234567890123456789012345678901")));
+    }
+
     private DueRequest request(
             String title, UUID categoryId, UUID subCategoryId,
             DueFrequency frequency, int interval,
             List<Integer> reminders, DueStatus status) {
         return request(title, categoryId, subCategoryId, frequency, interval,
-                reminders, status, null);
+                reminders, status, null, null);
     }
 
     private DueRequest request(
             String title, UUID categoryId, UUID subCategoryId,
             DueFrequency frequency, int interval,
             List<Integer> reminders, DueStatus status, String payeeUpiId) {
+        return request(title, categoryId, subCategoryId, frequency, interval,
+                reminders, status, payeeUpiId, null);
+    }
+
+    private DueRequest request(
+            String title, UUID categoryId, UUID subCategoryId,
+            DueFrequency frequency, int interval,
+            List<Integer> reminders, DueStatus status,
+            String payeeUpiId, String payeePhoneNumber) {
         return new DueRequest(
                 title, null, categoryId, subCategoryId, new BigDecimal("649.00"), "INR",
                 LocalDate.of(2026, 11, 1), frequency, interval, reminders,
-                title, payeeUpiId, null, false, status);
+                title, payeeUpiId, payeePhoneNumber, null, false, status);
     }
 
     private UUID categoryId(String code) {

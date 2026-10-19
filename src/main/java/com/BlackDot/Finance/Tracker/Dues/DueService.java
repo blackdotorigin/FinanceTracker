@@ -23,6 +23,8 @@ public class DueService {
     private static final Pattern UPI_ID_PATTERN =
             Pattern.compile(
                     "[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?@[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?");
+    private static final Pattern PHONE_NUMBER_PATTERN =
+            Pattern.compile("\\+?[0-9](?:[0-9(). -]*[0-9])?");
 
     private final DueRepository repository;
     private final DueCategoryRepository categoryRepository;
@@ -139,6 +141,9 @@ public class DueService {
         if (request.payeeUpiId() != null) {
             due.setPayeeUpiId(normalizeUpiId(request.payeeUpiId()));
         }
+        if (request.payeePhoneNumber() != null) {
+            due.setPayeePhoneNumber(normalizePhoneNumber(request.payeePhoneNumber()));
+        }
         due.setReference(trimToNull(request.reference()));
         due.setAutoPay(request.autoPay());
         due.setStatus(request.status());
@@ -179,5 +184,17 @@ public class DueService {
             throw new BadRequestException("payeeUpiId must be a valid UPI ID of at most 100 characters");
         }
         return upiId;
+    }
+
+    private String normalizePhoneNumber(String value) {
+        String phoneNumber = trimToNull(value);
+        if (phoneNumber == null) {
+            return null;
+        }
+        if (phoneNumber.length() > 30 || !PHONE_NUMBER_PATTERN.matcher(phoneNumber).matches()) {
+            throw new BadRequestException(
+                    "payeePhoneNumber must be a valid phone number of at most 30 characters");
+        }
+        return phoneNumber;
     }
 }

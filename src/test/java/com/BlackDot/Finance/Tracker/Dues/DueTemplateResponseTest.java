@@ -25,5 +25,7 @@ class DueTemplateResponseTest {
                 template.categories().getFirst().subcategories().getFirst().code());
         assertTrue(template.fields().stream()
                 .anyMatch(field -> field.name().equals("subCategoryId")));
+        assertTrue(template.fields().stream()
+                .anyMatch(field -> field.name().equals("payeePhoneNumber")));
     }
 }

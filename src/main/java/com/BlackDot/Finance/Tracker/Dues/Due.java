@@ -71,6 +71,9 @@ public class Due extends BaseEntity implements OwnedEntity {
     @Column(name = "payee_upi_id", length = 100)
     private String payeeUpiId;
 
+    @Column(name = "payee_phone_number", length = 30)
+    private String payeePhoneNumber;
+
     @Column(length = 100)
     private String reference;
 
